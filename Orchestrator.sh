@@ -1,79 +1,479 @@
-# -*- coding: utf-8 -*-
+#! /bin/bash
 
-import re
-import requests
-import sys
-import nltk 
-from bs4 import BeautifulSoup
-from selenium import webdriver
-import xlsxwriter
+function parsetextfile() {
 
+	grep -v "{" $1 |  grep -v "}" | grep -vi "Google" | grep -v "=" | grep -v ";" | grep -vi "appointment" > .tmp.txt
+	sed -i "s|\.|\\n|g" .tmp.txt
+}
 
-caps = "([A-Z])"
-prefixes = "(Mr|St|Mrs|Ms|Dr)[.]"
-suffixes = "(Inc|Ltd|Jr|Sr|Co)"
-starters = "(Mr|Mrs|Ms|Dr|He\s|She\s|It\s|They\s|Their\s|Our\s|We\s|But\s|However\s|That\s|This\s|Wherever)"
-acronyms = "([A-Z][.][A-Z][.](?:[A-Z][.])?)"
-websites = "[.](com|net|org|io|gov)"
+function parserawfile() {
 
-def split_into_sentences(text):
-    text = " " + text + "  "
-    text = text.replace("\n"," ")
-    text = re.sub(prefixes,"\\1<prd>",text)
-    text = re.sub(websites,"<prd>\\1",text)
-    if "Ph.D" in text: text = text.replace("Ph.D.","Ph<prd>D<prd>")
-    if '\n\n' in text: text = text.replace('\n\n','\n')
-    if "View on Google Maps" in text: text = text.replace("View on Google Maps","")
-    text = re.sub("\s" + caps + "[.] "," \\1<prd> ",text)
-    text = re.sub(acronyms+" "+starters,"\\1<stop> \\2",text)
-    text = re.sub(caps + "[.]" + caps + "[.]" + caps + "[.]","\\1<prd>\\2<prd>\\3<prd>",text)
-    text = re.sub(caps + "[.]" + caps + "[.]","\\1<prd>\\2<prd>",text)
-    text = re.sub(" "+suffixes+"[.] "+starters," \\1<stop> \\2",text)
-    text = re.sub(" "+suffixes+"[.]"," \\1<prd>",text)
-    text = re.sub(" " + caps + "[.]"," \\1<prd>",text)
-    if "”" in text: text = text.replace(".”","”.")
-    if "\"" in text: text = text.replace(".\"","\".")
-    if "!" in text: text = text.replace("!\"","\"!")
-    if "?" in text: text = text.replace("?\"","\"?")
-    text = text.replace(".",".<stop>")
-    text = text.replace("?","?<stop>")
-    text = text.replace("!","!<stop>")
-    text = text.replace("<prd>",".")
-    sentences = text.split("<stop>")
-    sentences = sentences[:-1]
-    sentences = [s.strip() for s in sentences]
-    return sentences
+	grep -iv "select a" $1 | grep -iv "gender" > .tmp.txt
+}
 
-def get_web_data(link):
-	# Extracting lists into "list"
-	driver = None
-    	try:
-		driver = webdriver.Chrome('../chromedriver')
-      		driver.get(link)
-     		html = unicode(driver.page_source.encode("utf-8"), "utf-8")
-		data = BeautifulSoup(html, 'html.parser')		# bs will "crawl" the opened page
-		print data.get_text().encode('utf-8')
-  	finally:
-    		if driver != None:
-      			driver.close()
+function name_identifiers() {
+	
+	name=$(grep "MD" .tmp.txt)
+	name2=$(grep "MBBS" .tmp.txt)
+	name3=$(grep "FACS" .tmp.txt)
+	name4=$(grep "Mr" .tmp.txt)
+	name5=$(grep "Ms" .tmp.txt)
+	name6=$(grep "Mrs" .tmp.txt)
+	
+	printf "$name\n$name2\n$name3\n$name4\n$name5\n$name" | tr -d '\t' | uniq -u
+}
 
-def get_file_data(link):
-	# Extracting lists into "list"
-	target = open(link, 'r+')
-	data = BeautifulSoup(target, 'html.parser')		# bs will "crawl" the opened page
-	return data.get_text().encode('utf-8')
-	target.close()
+function specialization_identifiers() {
 
+	id1="specialt"
+	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
 
-if __name__ == '__main__':
-	if len(sys.argv) != 3:
-		print "Usage: {} <link-list>".format(sys.argv[0])
-		# NZEC for chaining
-	if sys.argv[2] == "web":
-		a = get_web_data(sys.argv[1])
-		print a
-	elif sys.argv[2] == "loc":
-		a = get_file_data(sys.argv[1])
-		print a
-	else:
-		print "Invalid. Arguements [file] [web] only."
+	id2="interests"
+	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data1=$(grep -i -A"$iter" "$id2" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id3="specialization"
+	wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data2=$(grep -i -A"$iter" "$id3" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
+		if [[ $wcn -eq $wcn_p && $wcn -gt $wcn_o ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id4="conditions"
+	wcn_o=$(grep -i -A1 "$id4" .tmp.txt | wc -w )
+	for iter in {2..20}
+	do
+		data3=$(grep -i -A"$iter" "$id4" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id4" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id4" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id5="research interest"
+	wcn_o=$(grep -i -A1 "$id5" .tmp.txt | wc -w )
+	for iter in {2..20}
+	do
+		data4=$(grep -i -A"$iter" "$id5" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id5" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id5" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id6="expertise"
+	wcn_o=$(grep -i -A1 "$id6" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data5=$(grep -i -A"$iter" "$id6" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id6" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id6" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	printf "$data\n$data1\n$data2\n$data3\n$data4\n$data5" | tr -d '\t' | uniq -u
+		
+}
+
+function titles_identifiers() {
+
+	id1="title"
+	for iter in {1..2}
+	do
+		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+		if [ $wcn -eq $wcn_p ]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id2="professor"
+	for iter in {1..2}
+	do
+		data1=$(grep -i -A"$iter" "$id2" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+		if [ $wcn -eq $wcn_p ]; then
+			break
+		else
+			continue
+		fi
+	done
+	echo $data $data1 | tr -d "\t" | uniq -u
+
+}
+
+function qualification_identifiers() {
+
+	id1="internship"
+	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id2="medical degree"
+	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data1=$(grep -i -A"$iter" "$id2" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id3="residenc"
+	wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data2=$(grep -i -A"$iter" "$id3" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id4="fellowship"
+	wcn_o=$(grep -i -A1 "$id4" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data3=$(grep -i -A"$iter" "$id4" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id4" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id4" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+	
+	printf "$data $data1 $data2 $data3 $data4" | tr -d "\t" | uniq -u
+}
+
+function certification_identifiers() {
+
+	id1="certification"
+	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data2=$(grep -i -A"$iter" "$id1" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+	
+	printf "$data2" | tr -d '\t' | uniq -u
+
+}
+
+function affiliation_identifiers() {
+
+	id1="honorary member"
+	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id2="affiliat"
+	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
+	for iter in {1..20}
+	do
+		data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	
+	
+	printf "$data\n$data2" | tr -d '\t' | uniq -u
+
+}
+
+function access_details() {
+
+	if [ $1 == "phone" ];then
+		id1="phone"
+		wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+		for iter in {1..20}
+		do
+			data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+			wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+			wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+			if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+				break
+			else
+				continue
+			fi
+		done
+	
+		printf "$data" | tr -d '\t' | uniq -u
+
+		id2="call"
+		wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
+		for iter in {1..6}
+		do
+			data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
+			wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+			wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+			if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+				break
+			else
+				continue
+			fi
+		done
+	
+		printf "$data2" | tr -d '\t' | uniq -u
+
+		id3="clinic line"
+		wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
+		for iter in {1..6}
+		do
+			data3=$(grep -i -A"$iter" "$id3" .tmp.txt)
+			wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
+			wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
+			if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+				break
+			else
+				continue
+			fi
+		done
+	
+		printf "$data3" | tr -d '\t' | uniq -u
+
+	else
+		if [ $1 == "fax" ];then
+			id1="fax"
+			wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+			for iter in {1..6}
+			do
+				data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+				wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+				wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+				if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+					break
+				else
+					continue
+				fi
+			done
+	
+			printf "$data" | tr -d '\t' | uniq -u
+		else
+			if [ $1 == "virtual" ];then
+				id1="website"
+				wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+				for iter in {1..6}
+				do
+					data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+					wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+					wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+					if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+						break
+					else
+
+						continue
+					fi
+				done
+		
+				printf "$data" | tr -d '\t' | uniq -u
+				
+				id2="mail"
+				wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
+				for iter in {1..6}
+				do
+					data=$(grep -i -A"$iter" "$id2" .tmp.txt)
+					wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+					wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+					if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+						break
+					else
+						continue
+					fi
+				done
+				
+				printf "$data" | tr -d '\t' | uniq -u				
+
+			else
+
+				echo "Invalid option selected : Choose [phone] [fax] [virtual] [onsite] only"		
+			fi
+		fi
+	fi
+
+}
+
+function onsite_access() {
+	id1="address"
+	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+	for iter in {1..6}
+	do
+		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+	id2="location"
+	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
+	for iter in {1..6}
+	do
+		data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+	id3="patients at"
+	wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
+	for iter in {1..6}
+	do
+		data3=$(grep -i -A"$iter" "$id3" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	if [ $1 == "c" ];then
+		crumb1="street"
+		wcn_o=$(grep -i -C1 "$crumb1" .tmp.txt | wc -w )
+		crumb1data=$(grep -i -C10 "$crumb1" .tmp.txt)
+
+		crumb2="driving"
+		wcn_o=$(grep -i -C1 "$crumb2" .tmp.txt | wc -w )
+		crumb2data=$(grep -i -C10 "$crumb2" .tmp.txt)
+		
+		printf "$crumb1data\n$crumb2data" | tr -d '\t' | uniq -u
+	else
+		printf "$data\n$data2\n$data3" | tr -d '\t' | uniq -u
+
+	fi
+}
+
+function list_publications_doctorspage() {
+
+	id1="publication"
+	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+	for iter in {1..40}
+	do
+		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	id2="RSS Feed"
+	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
+	for iter in {1..40}
+	do
+		data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
+		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
+		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
+		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
+			break
+		else
+			continue
+		fi
+	done
+
+	printf "$data\n$data2" | tr -d '\t' | uniq -u
+}
+
+function list_publications_pubmed() {
+
+#	if [ $1 == "iv" ];then
+
+		author=$(zenity --entry --text="Enter Doctor's Name First_Last format" --title="DoctorScrape")
+		m_author="$(echo $author | sed "s|\_|\+|g")"
+		wget -O .tmp_pmidlist.txt "https://www.ncbi.nlm.nih.gov/pubmed/?term=$m_author[Author]"
+		python /home/sumanth/PYTHON/cw_doctors_project/GetDoctorsData.py .tmp_pmidlist.txt loc > .tmp_text.txt
+		sed -i "s|Similar articles|\n\n|g" .tmp_text.txt
+		grep -i "PMID" .tmp_text.txt
+		rm .tmp_pmidlist.txt .tmp_text.txt
+
+}
+		
