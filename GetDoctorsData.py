@@ -5,6 +5,9 @@ import requests
 import sys
 import nltk 
 from bs4 import BeautifulSoup
+from selenium import webdriver
+import xlsxwriter
+
 
 caps = "([A-Z])"
 prefixes = "(Mr|St|Mrs|Ms|Dr)[.]"
@@ -43,9 +46,16 @@ def split_into_sentences(text):
 
 def get_web_data(link):
 	# Extracting lists into "list"
-	html = requests.get(link).text 				# Request by python to open to page (Internet connection required here)
-	data = BeautifulSoup(html, 'html.parser')		# bs will "crawl" the opened page
-	print data.get_text().encode('utf-8')
+	driver = None
+    	try:
+		driver = webdriver.Chrome('../chromedriver')
+      		driver.get(link)
+     		html = unicode(driver.page_source.encode("utf-8"), "utf-8")
+		data = BeautifulSoup(html, 'html.parser')		# bs will "crawl" the opened page
+		print data.get_text().encode('utf-8')
+  	finally:
+    		if driver != None:
+      			driver.close()
 
 def get_file_data(link):
 	# Extracting lists into "list"
@@ -56,8 +66,14 @@ def get_file_data(link):
 
 
 if __name__ == '__main__':
-	if len(sys.argv) != 2:
+	if len(sys.argv) != 3:
 		print "Usage: {} <link-list>".format(sys.argv[0])
 		# NZEC for chaining
-	a = get_file_data(sys.argv[1])
-	print a
+	if sys.argv[2] == "web":
+		a = get_web_data(sys.argv[1])
+		print a
+	elif sys.argv[2] == "loc":
+		a = get_file_data(sys.argv[1])
+		print a
+	else:
+		print "Invalid. Arguements [file] [web] only."
