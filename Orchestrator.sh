@@ -1,479 +1,192 @@
 #! /bin/bash
 
-function parsetextfile() {
-
-	grep -v "{" $1 |  grep -v "}" | grep -vi "Google" | grep -v "=" | grep -v ";" | grep -vi "appointment" > .tmp.txt
-	sed -i "s|\.|\\n|g" .tmp.txt
+function dt () {
+	date +'%b_%d_%Y_%H_%M_%S'
 }
 
-function parserawfile() {
+function DocScr() {
 
-	grep -iv "select a" $1 | grep -iv "gender" > .tmp.txt
-}
+	zenity --info --text="Welcome to DocScr Beta. Please press OK and enter details to proceed" --title="DocScr Beta"
+	usname=$(zenity --entry --text="Please enter your username for logging" title="DocScr Beta")
 
-function name_identifiers() {
+	mkdir Doctors_Data_Results
+	mkdir Literature_Data_Results
+
+	echo "Created Results Folder Doctors_Data_Results Literature_Data_Results in `pwd`"
+	echo "User " $usname >> /APF/Sumanth/DocScr/DocScrlog/.log
+	echo "Created Results Folder Doctors_Data_Results Literature_Data_Results in `pwd`at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+
+	selecttask=$(zenity --list --column="Select your task" "RUN-SINGLE-QUERIES" "RUN-BATCHMODE" "PUB-SCRAPE" "COMMANDS-HELP" --title="DocScr Beta")
+
+	if [ $selecttask == "RUN-SINGLE-QUERIES" ];then
+		echo "$usname selected $selecttask at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+		cp /APF/Sumanth/DocScr/.modules.sh .
+		cp /APF/Sumanth/DocScr/.GDD.py .
+		cp /APF/Sumanth/DocScr/lqlist .
+		source .modules.sh
+		echo "DocScr Initialized Please start process from File or Wlink"
 	
-	name=$(grep "MD" .tmp.txt)
-	name2=$(grep "MBBS" .tmp.txt)
-	name3=$(grep "FACS" .tmp.txt)
-	name4=$(grep "Mr" .tmp.txt)
-	name5=$(grep "Ms" .tmp.txt)
-	name6=$(grep "Mrs" .tmp.txt)
-	
-	printf "$name\n$name2\n$name3\n$name4\n$name5\n$name" | tr -d '\t' | uniq -u
-}
-
-function specialization_identifiers() {
-
-	id1="specialt"
-	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id2="interests"
-	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data1=$(grep -i -A"$iter" "$id2" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id3="specialization"
-	wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data2=$(grep -i -A"$iter" "$id3" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
-		if [[ $wcn -eq $wcn_p && $wcn -gt $wcn_o ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id4="conditions"
-	wcn_o=$(grep -i -A1 "$id4" .tmp.txt | wc -w )
-	for iter in {2..20}
-	do
-		data3=$(grep -i -A"$iter" "$id4" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id4" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id4" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id5="research interest"
-	wcn_o=$(grep -i -A1 "$id5" .tmp.txt | wc -w )
-	for iter in {2..20}
-	do
-		data4=$(grep -i -A"$iter" "$id5" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id5" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id5" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id6="expertise"
-	wcn_o=$(grep -i -A1 "$id6" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data5=$(grep -i -A"$iter" "$id6" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id6" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id6" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	printf "$data\n$data1\n$data2\n$data3\n$data4\n$data5" | tr -d '\t' | uniq -u
-		
-}
-
-function titles_identifiers() {
-
-	id1="title"
-	for iter in {1..2}
-	do
-		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-		if [ $wcn -eq $wcn_p ]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id2="professor"
-	for iter in {1..2}
-	do
-		data1=$(grep -i -A"$iter" "$id2" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-		if [ $wcn -eq $wcn_p ]; then
-			break
-		else
-			continue
-		fi
-	done
-	echo $data $data1 | tr -d "\t" | uniq -u
-
-}
-
-function qualification_identifiers() {
-
-	id1="internship"
-	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id2="medical degree"
-	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data1=$(grep -i -A"$iter" "$id2" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id3="residenc"
-	wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data2=$(grep -i -A"$iter" "$id3" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id4="fellowship"
-	wcn_o=$(grep -i -A1 "$id4" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data3=$(grep -i -A"$iter" "$id4" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id4" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id4" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-	
-	printf "$data $data1 $data2 $data3 $data4" | tr -d "\t" | uniq -u
-}
-
-function certification_identifiers() {
-
-	id1="certification"
-	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data2=$(grep -i -A"$iter" "$id1" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-	
-	printf "$data2" | tr -d '\t' | uniq -u
-
-}
-
-function affiliation_identifiers() {
-
-	id1="honorary member"
-	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	id2="affiliat"
-	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
-	for iter in {1..20}
-	do
-		data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	
-	
-	printf "$data\n$data2" | tr -d '\t' | uniq -u
-
-}
-
-function access_details() {
-
-	if [ $1 == "phone" ];then
-		id1="phone"
-		wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-		for iter in {1..20}
-		do
-			data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-			wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-			wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-			if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-				break
-			else
-				continue
-			fi
-		done
-	
-		printf "$data" | tr -d '\t' | uniq -u
-
-		id2="call"
-		wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
-		for iter in {1..6}
-		do
-			data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
-			wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-			wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-			if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-				break
-			else
-				continue
-			fi
-		done
-	
-		printf "$data2" | tr -d '\t' | uniq -u
-
-		id3="clinic line"
-		wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
-		for iter in {1..6}
-		do
-			data3=$(grep -i -A"$iter" "$id3" .tmp.txt)
-			wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
-			wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
-			if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-				break
-			else
-				continue
-			fi
-		done
-	
-		printf "$data3" | tr -d '\t' | uniq -u
-
 	else
-		if [ $1 == "fax" ];then
-			id1="fax"
-			wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-			for iter in {1..6}
-			do
-				data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-				wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-				wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-				if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-					break
+		if [ $selecttask == "RUN-BATCHMODE" ]; then
+		echo "$usname selected $selecttask at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+		cp /APF/Sumanth/DocScr/.modules.sh .
+		cp /APF/Sumanth/DocScr/.GDD.py .
+		cp /APF/Sumanth/DocScr/lqlist .
+		source .modules.sh
+		echo "DocScr Beta Initialized"
+
+		batch_directory=$(zenity --entry --text="Please enter the batch raw files location" title="DocScr Beta")
+		find $batch_directory | grep -vw "$batch_directory"$ > workinglist
+		echo "$usname entered $batch_directory at time `dt` for processing $selecttask" >> /APF/Sumanth/DocScr/DocScrlog/.log
+
+		while IFS='' read -r line || [[ -n "$line" ]]; do
+			process loc "$line"
+			name=$(name_identifiers | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			title=$(titles_identifiers | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			qualification=$(qualification_identifiers | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			specialt=$(specialization_identifiers | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			certif=$(certification_identifiers | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			affiliation=$(affiliation_identifiers | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			relevence=$(cwrelevence | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			phone=$(access_details phone | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			fax=$(access_details fax | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			address=$(onsite_access c | tr -d '\t' | sed '/ ^$/d' | sed '/^$/d')
+			address_alternate=$(onsite_access r | tr -d '\t' |sed '/ ^$/d' | sed '/^$/d')
+			
+			filename=$(echo "$line" | sed "s|$batch_directory||g")
+
+			printf "NAME(s)_IDENTIFIED\t\"$name\"" > Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "ACADEMIC/PROFESSIONAL TITLES\t\"$title\""  >> Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "ACADEMIC QUALIFICATIONS\t\"$qualification\"" >> Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "SPECIALISATION & RESEARCH INTERESTS\t\"$specialt\"" >> Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "BOARD CERIFICATIONS\t\"$certif\"" >> Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "RELEVENCE TO CWO\t\"$relevence\"" >> Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "CONTACT_DETAILS PHONE\t\"$phone\"" >> Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "CONTACT_DETAILS FAX\t\"$fax\"" >> Doctors_Data_Results/$filename.csv
+			printf "\n" >> Doctors_Data_Results/$filename.csv
+			printf "CONTACT_DETAILS ADDRESS\t\"$address\"" >> Doctors_Data_Results/$filename.csv
+			printf "\"$address_alternate\"\n" >> Doctors_Data_Results/$filename.csv
+			printf "_____________________END_OF_FILE__________________________\n\n\n" >> Doctors_Data_Results/$filename.csv
+
+			echo "Finished processing file : $line"
+			echo "Finished processing file : $line at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+			
+		done < workinglist
+
+		ls $batch_directory | sed "s|\-|\_|g" | sed "s|_md$||g" > Doctors_Data_Results/Doctors_List_batch_`dt`
+		zenity --text-info --filename="Doctors_Data_Results/Doctors_List_batch_`dt`" --title="Doctors List Scraped in Batch"
+		zenity --info --text="Process Completed. Data stored in Report" --title="DocScr Beta"
+		else
+			if [ $selecttask == "PUB-SCRAPE" ]; then
+				echo "Pub-Scrape function selected"
+				cp /APF/Sumanth/DocScr/.modules.sh .
+				cp /APF/Sumanth/DocScr/.GDD.py .
+				cp /APF/Sumanth/DocScr/lqlist .
+				cp /APF/Sumanth/DocScr/nqlist .
+				source .modules.sh
+				doc_list=$(zenity --entry --text="Please enter the list of query-names" title="DocScr Beta")
+				while IFS='' read -r line || [[ -n "$line" ]]; do
+					query=$(echo "$line" | sed "s|\_|\+|g")
+					pubmedresults=$(list_publications_pubmed $query)
+					ashresults=$(list_publications_ash $query)
+					nocresults=$(list_publications_noc $query)
+					biomedresults=$(list_publications_biomed $query)
+					ctresults=$(list_publications_ct $query)
+
+					printf "RESULTS FETCHED FOR\t\"$line\"" > Literature_Data_Results/$line.csv
+					printf "\n\n" >> Literature_Data_Results/$line.csv
+					printf "PUBMED-NIM TOP RESULTS\t\"$pubmedresults\"" >> Literature_Data_Results/$line.csv
+					printf "\n" >> Literature_Data_Results/$line.csv
+					printf "ASH PUBLICATIONS\t\"$ashresults\"" >> Literature_Data_Results/$line.csv
+					printf "\n" >> Literature_Data_Results/$line.csv
+					printf "JOURNAL OF NEUROONCOLOGY\t\"$nocresults\"" >> Literature_Data_Results/$line.csv
+					printf "\n" >> Literature_Data_Results/$line.csv
+					printf "BIOMEDCENTRAL BREAST CANCER RESEARCH\t\"$biomedresults\"" >> Literature_Data_Results/$line.csv
+					printf "\n" >> Literature_Data_Results/$line.csv
+					printf "TOP CLINICAL TRIAL LISTED UNDER US Gov\t\"$ctresults\"" >> Literature_Data_Results/$line.csv
+					printf "\n\n" >> Literature_Data_Results/$line.csv
+
+					score=$(index_doctor Literature_Data_Results/$line.csv lqlist nqlist)
+					printf "RELEVENCE INDEX\t\"$score\"" >> Literature_Data_Results/$line.csv
+					printf "_____________________END_OF_FILE__________________________\n\n\n" >> Literature_Data_Results/$filename.csv
+
+					echo "Finished processing query : $line"
+					echo "Finished processing query : $line at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+				done < $doc_list
+				zenity --info --text="Process Completed. Data stored in Report" --title="DocScr Beta"
+			else
+				if [ $selecttask == "COMMANDS-HELP" ]; then
+					echo "$usname selected COMMAND-HELP module from DocScr at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+					zenity --text-info --filename="/APF/Sumanth/DocScr/commands.txt" --title="DocScr Beta"
+					rm -rf Doctors_Data_Results/ Literature_Data_Results/
+					echo "Closing current job invocation. Please enter DocScr to reinitiate"
+
 				else
-					continue
+					echo "Improper selection"
 				fi
-			done
-	
-			printf "$data" | tr -d '\t' | uniq -u
-		else
-			if [ $1 == "virtual" ];then
-				id1="website"
-				wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-				for iter in {1..6}
-				do
-					data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-					wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-					wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-					if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-						break
-					else
-
-						continue
-					fi
-				done
-		
-				printf "$data" | tr -d '\t' | uniq -u
-				
-				id2="mail"
-				wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
-				for iter in {1..6}
-				do
-					data=$(grep -i -A"$iter" "$id2" .tmp.txt)
-					wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-					wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-					if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-						break
-					else
-						continue
-					fi
-				done
-				
-				printf "$data" | tr -d '\t' | uniq -u				
-
-			else
-
-				echo "Invalid option selected : Choose [phone] [fax] [virtual] [onsite] only"		
 			fi
 		fi
-	fi
-
-}
-
-function onsite_access() {
-	id1="address"
-	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-	for iter in {1..6}
-	do
-		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-	id2="location"
-	wcn_o=$(grep -i -A1 "$id2" .tmp.txt | wc -w )
-	for iter in {1..6}
-	do
-		data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-	id3="patients at"
-	wcn_o=$(grep -i -A1 "$id3" .tmp.txt | wc -w )
-	for iter in {1..6}
-	do
-		data3=$(grep -i -A"$iter" "$id3" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id3" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id3" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
-
-	if [ $1 == "c" ];then
-		crumb1="street"
-		wcn_o=$(grep -i -C1 "$crumb1" .tmp.txt | wc -w )
-		crumb1data=$(grep -i -C10 "$crumb1" .tmp.txt)
-
-		crumb2="driving"
-		wcn_o=$(grep -i -C1 "$crumb2" .tmp.txt | wc -w )
-		crumb2data=$(grep -i -C10 "$crumb2" .tmp.txt)
-		
-		printf "$crumb1data\n$crumb2data" | tr -d '\t' | uniq -u
-	else
-		printf "$data\n$data2\n$data3" | tr -d '\t' | uniq -u
 
 	fi
+
 }
 
-function list_publications_doctorspage() {
+function list_pharam_research() {
+				echo "Collecting Pharma's Interests"
+				cp /APF/Sumanth/DocScr/.modules.sh .
+				cp /APF/Sumanth/DocScr/.GDD.py .
+				cp /APF/Sumanth/DocScr/lqlist .
+				cp /APF/Sumanth/DocScr/nqlist .
+				source .modules.sh
+				pharma_list=$(zenity --entry --text="Please enter the list of pharma-query-names" title="DocScr Beta")
+				while IFS='' read -r line || [[ -n "$line" ]]; do
+					query=$(echo "$line" | sed "s|\_|\+|g")
+					ctresults=$(list_publications_ctpharma $query)
 
-	id1="publication"
-	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-	for iter in {1..40}
-	do
-		data=$(grep -i -A"$iter" "$id1" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id1" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id1" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
+					printf "RESULTS FETCHED FOR\t\"$line\"" > $line.csv
+					printf "\"$ctresults\"" >> $line.csv
+					printf "\n\n" >> $line.csv
+					printf "_____________________END_OF_FILE__________________________\n\n\n" >> $line.csv
 
-	id2="RSS Feed"
-	wcn_o=$(grep -i -A1 "$id1" .tmp.txt | wc -w )
-	for iter in {1..40}
-	do
-		data2=$(grep -i -A"$iter" "$id2" .tmp.txt)
-		wcn=$(grep -i -A"$iter" "$id2" .tmp.txt | wc -w)
-		wcn_p=$(grep -i -A"$(($iter-1))" "$id2" .tmp.txt | wc -w)
-		if [[ "$wcn" -eq "$wcn_p" && "$wcn" -gt "$wcn_o" ]]; then
-			break
-		else
-			continue
-		fi
-	done
+					echo "Finished processing query : $line"
+					echo "Finished processing query : $line at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+				done < $pharma_list
 
-	printf "$data\n$data2" | tr -d '\t' | uniq -u
+function DSAnalytix() {
+
+	zenity --info --text="Welcome to DSAnalytix Beta. Please press OK and enter details to proceed" --title="DSAnalytix Beta"
+	usname=$(zenity --entry --text="Please enter your username for logging" title="DSAnalytix Beta")
+	mkdir Analytix_Data_Results
+	echo "$usname Created Results Folder Analytix_Data_Results in `pwd`at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+	data_resv=$(zenity --entry --text="Please enter parsed data location for DSAnalytix" title="DSAnalytix Beta")
+	echo "$usname set data reservoir for analytics as $data_resv at time `dt`" >> /APF/Sumanth/DocScr/DocScrlog/.log
+	
+
+
 }
 
-function list_publications_pubmed() {
 
-#	if [ $1 == "iv" ];then
 
-		author=$(zenity --entry --text="Enter Doctor's Name First_Last format" --title="DoctorScrape")
-		m_author="$(echo $author | sed "s|\_|\+|g")"
-		wget -O .tmp_pmidlist.txt "https://www.ncbi.nlm.nih.gov/pubmed/?term=$m_author[Author]"
-		python /home/sumanth/PYTHON/cw_doctors_project/GetDoctorsData.py .tmp_pmidlist.txt loc > .tmp_text.txt
-		sed -i "s|Similar articles|\n\n|g" .tmp_text.txt
-		grep -i "PMID" .tmp_text.txt
-		rm .tmp_pmidlist.txt .tmp_text.txt
+}
 
+function iwantout() {
+	mv Doctors_Data_Results Doctors_Data_Results_"$usname"_`dt` && cp -r Doctors_Data_Results_"$usname"_`dt` /APF/Sumanth/DocScr/backup_profiles/
+
+	mv Literature_Data_Results Literature_Data_Results_"$usname"_`dt` && cp -r Literature_Data_Results_"$usname"_`dt` /APF/Sumanth/DocScr/backup_literature/
+
+	echo "Copied backup of your projects"
+
+	echo "Clearing pwd area"
+	rm -rf *
+	echo "Now exiting in 3 sec..."
+	sleep 3
+	exit
 }
 		
